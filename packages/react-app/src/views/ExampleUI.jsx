@@ -2,8 +2,12 @@ import { Button, Card, DatePicker, Divider, Input, Progress, Slider, Spin, Switc
 import React, { useState } from "react";
 import { utils } from "ethers";
 import { SyncOutlined } from "@ant-design/icons";
+import { App } from '../App.jsx';
 
 import { Address, Balance, Events } from "../components";
+import { useContractReader, useBalance } from "eth-hooks";
+import Transactor from '../helpers'
+const ethers = require("ethers");
 
 export default function ExampleUI({
   purpose,
@@ -15,8 +19,29 @@ export default function ExampleUI({
   tx,
   readContracts,
   writeContracts,
+  targetNetwork,
+  gasPrice
 }) {
-  const [newPurpose, setNewPurpose] = useState("loading...");
+
+const [newPurpose, setNewPurpose] = useState("loading...");
+
+
+
+const tokensPerEth = useContractReader(readContracts, "YourVyperContract", "tokensPerETH");
+
+
+const [tokenBuyAmount, setTokenBuyAmount] = useState({
+  valid: true,
+  value: "",
+
+});
+
+
+const ethCostToPurchaseTokens = tokenBuyAmount.valid &&
+  tokensPerEth &&
+  ethers.utils.parseEther("" + tokenBuyAmount.value /ethers.utils.parseFloat(tokensPerEth));
+
+const [buying, setBuying] = useState();
 
   return (
     <div>
@@ -33,11 +58,42 @@ export default function ExampleUI({
               setNewPurpose(e.target.value);
             }}
           />
+          <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
+            <div style={{ padding: 8 }}>{tokensPerEth && tokensPerEth.toNumber()}tokens per ETH</div>
+<input
+  style={{textAlign: "center"}}
+  placeholder={"amount of tokens to buy"}
+  value={tokenBuyAmount.value}
+  onChange={e => {
+      const newValue = e.target.value.startsWith(".") ? "0." : e.target.value;
+       const buyAmount = {
+                        value: newValue,
+                        valid: /^\d*\.?\d+$/.test(newValue),
+                      };
+                      setTokenBuyAmount(buyAmount);
+                    }}
+/>
+                      <Balance balance={ethCostToPurchaseTokens} dollarMultiplier={price} />
+                  
+          </div>
+          <div style={{border: "1px solid #cccccc", padding: 16, width: 400, margin: "auto", marginTop: 64 }}>
+            <Button style= {{ marginTop: 8 }}
+              type={"primary"}
+              loading={buying}
+              onClick={async () => {
+                setBuying(true);
+                const buy = await tx(writeContracts.YourVyperContract.buyToken({ value: ethCostToPurchaseTokens }));
+                setBuying(false);
+              }}
+            disabled={!tokenBuyAmount.valid}
+          >BuyToken</Button>
+          </div>
           <Button
             style={{ marginTop: 8 }}
             onClick={async () => {
               /* look how you call setPurpose on your contract: */
               /* notice how you pass a call back for tx updates too */
+            
               const result = tx(writeContracts.YourContract.setPurpose(newPurpose), update => {
                 console.log("📡 Transaction Update:", update);
                 if (update && (update.status === "confirmed" || update.status === 1)) {
@@ -82,9 +138,9 @@ export default function ExampleUI({
         {/* use utils.formatEther to display a BigNumber: */}
         <h2>Your Balance: {yourLocalBalance ? utils.formatEther(yourLocalBalance) : "..."}</h2>
         <Divider />
-        Your Contract Address:
+        TokenVendor in Vyper:
         <Address
-          address={readContracts && readContracts.YourContract ? readContracts.YourContract.address : null}
+          address={readContracts && readContracts.YourVyperContract ? readContracts.YourVyperContract.address : null}
           ensProvider={mainnetProvider}
           fontSize={16}
         />

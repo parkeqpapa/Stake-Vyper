@@ -2,7 +2,7 @@
 
 const { ethers } = require("hardhat");
 
-const localChainId = "31337";
+const localChainId = "8545";
 
 // const sleep = (ms) =>
 //   new Promise((r) =>
@@ -22,7 +22,6 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
   await deploy("YourVyperContract", {
     // Learn more about args here: https://www.npmjs.com/package/hardhat-deploy#deploymentsdeploy
     from: deployer,
-     args: [ethers.utils.parseEther("1.5"), '0xaAC799eC2d00C013f1F11c37E654e59B0429DF6A', 1000],
     log: true,
     waitConfirmations: 5,
   });
